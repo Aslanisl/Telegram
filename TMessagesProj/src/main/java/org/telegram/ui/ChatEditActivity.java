@@ -113,6 +113,7 @@ public class ChatEditActivity extends BaseFragment implements ImageUpdater.Image
     private TextCell membersCell;
     private TextCell memberRequestsCell;
     private TextCell inviteLinksCell;
+    private TextCell reactionsCell;
     private TextCell adminCell;
     private TextCell blockCell;
     private TextCell logCell;
@@ -810,6 +811,13 @@ public class ChatEditActivity extends BaseFragment implements ImageUpdater.Image
             presentFragment(fragment);
         });
 
+        reactionsCell = new TextCell(context);
+        reactionsCell.setBackgroundDrawable(Theme.getSelectorDrawable(false));
+        reactionsCell.setOnClickListener(v -> {
+            ReactionsSettingsActivity fragment = new ReactionsSettingsActivity(chatId, info);
+            presentFragment(fragment);
+        });
+
         adminCell = new TextCell(context);
         adminCell.setBackgroundDrawable(Theme.getSelectorDrawable(false));
         adminCell.setOnClickListener(v -> {
@@ -854,6 +862,7 @@ public class ChatEditActivity extends BaseFragment implements ImageUpdater.Image
         if (!isChannel) {
             infoContainer.addView(inviteLinksCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
         }
+        infoContainer.addView(reactionsCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
         infoContainer.addView(adminCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
         infoContainer.addView(membersCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
         if (memberRequestsCell != null && info != null && info.requests_pending > 0) {
@@ -1271,6 +1280,19 @@ public class ChatEditActivity extends BaseFragment implements ImageUpdater.Image
             }
         }
         boolean isPrivate = TextUtils.isEmpty(currentChat.username);
+
+        if (ChatObject.hasAdminRights(currentChat) && info != null) {
+            reactionsCell.setVisibility(View.VISIBLE);
+            reactionsCell.setTextAndValueAndIcon(
+                    LocaleController.getString("Reactions", R.string.Reactions),
+                    info.available_reactions != null && !info.available_reactions.isEmpty()
+                            ? LocaleController.getString("ReactionsOn", R.string.ReactionsOn)
+                            : LocaleController.getString("ReactionsOff", R.string.ReactionsOff),
+                    R.drawable.actions_reactions,
+                    true);
+        } else {
+            reactionsCell.setVisibility(View.GONE);
+        }
 
         if (historyCell != null) {
             if (info != null && info.location instanceof TLRPC.TL_channelLocation) {
