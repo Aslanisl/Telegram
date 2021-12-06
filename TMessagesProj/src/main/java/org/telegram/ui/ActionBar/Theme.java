@@ -67,7 +67,6 @@ import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.Bitmaps;
 import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.ChatThemeController;
-import org.telegram.messenger.Emoji;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.ImageLocation;
@@ -120,7 +119,6 @@ import java.util.Calendar;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
@@ -2733,6 +2731,11 @@ public class Theme {
     public static Paint chat_radialProgress2Paint;
     public static Paint chat_radialProgressPausedPaint;
     public static Paint chat_radialProgressPausedSeekbarPaint;
+    public static Paint chat_reactionBackgroundPaint;
+    public static Paint chat_reactionTransparentBackgroundPaint;
+    public static Paint chat_reactionUserBackgroundPaint;
+    public static Paint chat_reactionBackgroundSelectedPaint;
+    public static Paint chat_reactionBackgroundUnderSelectedPaint;
 
     public static TextPaint chat_msgTextPaint;
     public static TextPaint chat_actionTextPaint;
@@ -2765,6 +2768,8 @@ public class Theme {
     public static TextPaint chat_replyTextPaint;
     public static TextPaint chat_contextResult_titleTextPaint;
     public static TextPaint chat_contextResult_descriptionTextPaint;
+    public static TextPaint chat_reactionTextPaint;
+    public static TextPaint chat_reactionUnderTextPaint;
 
     public static Drawable chat_msgNoSoundDrawable;
     public static Drawable chat_composeShadowDrawable;
@@ -3442,6 +3447,11 @@ public class Theme {
     public static final String key_chat_inTextSelectionHighlight = "chat_inTextSelectionHighlight";
     public static final String key_chat_recordedVoiceHighlight = "key_chat_recordedVoiceHighlight";
     public static final String key_chat_TextSelectionCursor = "chat_TextSelectionCursor";
+    public static final String key_chat_reactionBackground = "key_chat_reactionBackground";
+    public static final String key_chat_reactionTransparentBackground = "key_chat_reactionTransparentBackground";
+    public static final String key_chat_reactionBackgroundSelected = "key_chat_reactionBackgroundSelected";
+    public static final String key_chat_reactionUnderBackgroundSelected = "key_chat_reactionUnderBackgroundSelected";
+    public static final String key_chat_reactionUnderText = "key_chat_reactionUnderText";
 
     public static final String key_voipgroup_listSelector = "voipgroup_listSelector";
     public static final String key_voipgroup_inviteMembersBackground = "voipgroup_inviteMembersBackground";
@@ -3720,6 +3730,13 @@ public class Theme {
     public static final String key_paint_chatBotButton = "paintChatBotButton";
     public static final String key_paint_chatComposeBackground = "paintChatComposeBackground";
     public static final String key_paint_chatTimeBackground = "paintChatTimeBackground";
+    public static final String key_paint_chatReactionBackground = "paintChatReactionBackground";
+    public static final String key_paint_chatReactionTransparentBackground = "paintChatReactionTransparentBackground";
+    public static final String key_paint_chatReactionUserBackground = "paintChatReactionUserBackground";
+    public static final String key_paint_chatReactionBackgroundSelected = "paintChatReactionBackgroundSelected";
+    public static final String key_paint_chatReactionUnderBackgroundSelected = "paintChatReactionUnderBackgroundSelected";
+    public static final String key_paint_chatReactionText = "paintChatReactionText";
+    public static final String key_paint_chatUnderReactionText = "paintChatUnderReactionText";
     private static final HashMap<String, Paint> defaultChatPaints = new HashMap<>();
     private static final HashMap<String, String> defaultChatPaintColors = new HashMap<>();
 
@@ -4246,6 +4263,11 @@ public class Theme {
         defaultColors.put(key_chat_goDownButtonIcon, 0xff8e959b);
         defaultColors.put(key_chat_goDownButtonCounter, 0xffffffff);
         defaultColors.put(key_chat_goDownButtonCounterBackground, 0xff4da2e8);
+        defaultColors.put(key_chat_reactionBackground, 0x19378DD1);
+        defaultColors.put(key_chat_reactionTransparentBackground, 0x17000000);
+        defaultColors.put(key_chat_reactionBackgroundSelected, 0xff599fd8);
+        defaultColors.put(key_chat_reactionUnderText, 0xffffffff);
+        defaultColors.put(key_chat_reactionUnderBackgroundSelected, 0xffffffff);
         defaultColors.put(key_chat_messagePanelCancelInlineBot, 0xffadadad);
         defaultColors.put(key_chat_messagePanelVoicePressed, 0xffffffff);
         defaultColors.put(key_chat_messagePanelVoiceBackground, 0xff5DA6DE);
@@ -8173,6 +8195,10 @@ public class Theme {
             chat_audioPerformerPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
             chat_botButtonPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
             chat_botButtonPaint.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+            chat_reactionTextPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
+            chat_reactionTextPaint.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+            chat_reactionUnderTextPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
+            chat_reactionUnderTextPaint.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
             chat_contactNamePaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
             chat_contactNamePaint.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
             chat_contactPhonePaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
@@ -8219,12 +8245,31 @@ public class Theme {
             chat_actionBackgroundPaint2 = new Paint(Paint.ANTI_ALIAS_FLAG);
             chat_actionBackgroundSelectedPaint2 = new Paint(Paint.ANTI_ALIAS_FLAG);
 
+            chat_reactionBackgroundPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+            chat_reactionTransparentBackgroundPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+            chat_reactionUserBackgroundPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+            chat_reactionUserBackgroundPaint.setStyle(Paint.Style.STROKE);
+            chat_reactionUserBackgroundPaint.setStrokeWidth(AndroidUtilities.dp(3));
+            chat_reactionBackgroundSelectedPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+            chat_reactionBackgroundSelectedPaint.setStyle(Paint.Style.STROKE);
+            chat_reactionBackgroundSelectedPaint.setStrokeWidth(AndroidUtilities.dp(2));
+            chat_reactionBackgroundUnderSelectedPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+            chat_reactionBackgroundUnderSelectedPaint.setStyle(Paint.Style.STROKE);
+            chat_reactionBackgroundUnderSelectedPaint.setStrokeWidth(AndroidUtilities.dp(2));
+
             addChatPaint(key_paint_chatActionBackground, chat_actionBackgroundPaint, key_chat_serviceBackground);
             addChatPaint(key_paint_chatActionBackgroundSelected, chat_actionBackgroundSelectedPaint, key_chat_serviceBackgroundSelected);
             addChatPaint(key_paint_chatActionText, chat_actionTextPaint, key_chat_serviceText);
             addChatPaint(key_paint_chatBotButton, chat_botButtonPaint, key_chat_botButtonText);
             addChatPaint(key_paint_chatComposeBackground, chat_composeBackgroundPaint, key_chat_messagePanelBackground);
             addChatPaint(key_paint_chatTimeBackground, chat_timeBackgroundPaint, key_chat_mediaTimeBackground);
+            addChatPaint(key_paint_chatReactionBackground, chat_reactionBackgroundPaint, key_chat_reactionBackground);
+            addChatPaint(key_paint_chatReactionTransparentBackground, chat_reactionTransparentBackgroundPaint, key_chat_reactionTransparentBackground);
+            addChatPaint(key_paint_chatReactionUserBackground, chat_reactionUserBackgroundPaint, key_chat_reactionBackground);
+            addChatPaint(key_paint_chatReactionBackgroundSelected, chat_reactionBackgroundSelectedPaint, key_chat_reactionBackgroundSelected);
+            addChatPaint(key_paint_chatReactionUnderBackgroundSelected, chat_reactionBackgroundUnderSelectedPaint, key_chat_reactionUnderBackgroundSelected);
+            addChatPaint(key_paint_chatReactionText, chat_reactionTextPaint, key_chat_reactionBackground);
+            addChatPaint(key_paint_chatUnderReactionText, chat_reactionUnderTextPaint, key_chat_reactionUnderText);
         }
     }
 
@@ -8543,6 +8588,8 @@ public class Theme {
             chat_instantViewRectPaint.setStrokeWidth(AndroidUtilities.dp(1));
             chat_pollTimerPaint.setStrokeWidth(AndroidUtilities.dp(1.1f));
             chat_actionTextPaint.setTextSize(AndroidUtilities.dp(Math.max(16, SharedConfig.fontSize) - 2));
+            chat_reactionTextPaint.setTextSize(AndroidUtilities.dp(14));
+            chat_reactionUnderTextPaint.setTextSize(AndroidUtilities.dp(14));
             chat_contextResult_titleTextPaint.setTextSize(AndroidUtilities.dp(15));
             chat_contextResult_descriptionTextPaint.setTextSize(AndroidUtilities.dp(13));
             chat_radialProgressPaint.setStrokeWidth(AndroidUtilities.dp(3));
@@ -8894,6 +8941,13 @@ public class Theme {
         chat_actionBackgroundPaint2.setColor(serviceColor2);
         chat_actionBackgroundSelectedPaint2.setColor(servicePressedColor2);
         currentColor = serviceColor;
+
+        chat_reactionBackgroundPaint.setColor(getColor(key_chat_reactionBackground));
+        chat_reactionUserBackgroundPaint.setColor(getColor(key_chat_reactionBackground));
+        chat_reactionBackgroundSelectedPaint.setColor(getColor(key_chat_reactionBackgroundSelected));
+        chat_reactionBackgroundUnderSelectedPaint.setColor(getColor(key_chat_reactionUnderBackgroundSelected));
+        chat_reactionTextPaint.setColor(getColor(key_chat_reactionBackgroundSelected));
+        chat_reactionUnderTextPaint.setColor(getColor(key_chat_reactionUnderText));
 
         if (serviceBitmapShader != null && (currentColors.get(key_chat_serviceBackground) == null || drawable instanceof MotionBackgroundDrawable)) {
             chat_actionBackgroundPaint.setShader(serviceBitmapShader);

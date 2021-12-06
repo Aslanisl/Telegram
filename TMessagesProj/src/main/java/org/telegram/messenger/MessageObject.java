@@ -128,6 +128,7 @@ public class MessageObject {
     public String botStartParam;
 
     public boolean animateComments;
+    public boolean animateReactions;
 
     public boolean loadingCancelled;
 

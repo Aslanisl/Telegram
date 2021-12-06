@@ -245,7 +245,7 @@ public class PollVotesAlert extends BottomSheet {
         }
     };
 
-    public class UserCell extends FrameLayout {
+    private class UserCell extends FrameLayout {
 
         private BackupImageView avatarImageView;
         private SimpleTextView nameTextView;

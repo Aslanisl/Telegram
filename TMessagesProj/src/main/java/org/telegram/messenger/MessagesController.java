@@ -60,6 +60,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
@@ -172,6 +173,10 @@ public class MessagesController extends BaseController implements NotificationCe
     private LongSparseIntArray loadingChannelAdmins = new LongSparseIntArray();
 
     private SparseIntArray migratedChats = new SparseIntArray();
+
+    private boolean reactionsLoading = false;
+    private long lastTimeReactionsLoaded;
+    private ArrayList<TLRPC.TL_availableReaction> availableReactions = new ArrayList<>();
 
     private LongSparseArray<SponsoredMessagesInfo> sponsoredMessages = new LongSparseArray<>();
 
@@ -14618,5 +14623,27 @@ public class MessagesController extends BaseController implements NotificationCe
     public interface MessagesLoadedCallback {
         void onMessagesLoaded(boolean fromCache);
         void onError();
+    }
+
+    public ArrayList<TLRPC.TL_availableReaction> getAvailableReactions() {
+        if (reactionsLoading || (System.currentTimeMillis() - lastTimeReactionsLoaded < 3600 * 1000L)) {
+            return availableReactions;
+        }
+        reactionsLoading = true;
+        TLRPC.TL_messages_getAvailableReactions req = new TLRPC.TL_messages_getAvailableReactions();
+        if (!availableReactions.isEmpty()) {
+            req.hash = 1;
+        }
+        ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
+            if (response instanceof TLRPC.TL_messages_availableReactions) {
+                lastTimeReactionsLoaded = System.currentTimeMillis();
+                TLRPC.TL_messages_availableReactions reactionsResult = (TLRPC.TL_messages_availableReactions) response;
+                availableReactions.clear();
+                availableReactions.addAll(reactionsResult.reactions);
+                getNotificationCenter().postNotificationName(NotificationCenter.availableReactionsUpdated, availableReactions);
+            }
+            reactionsLoading = false;
+        }));
+        return availableReactions;
     }
 }

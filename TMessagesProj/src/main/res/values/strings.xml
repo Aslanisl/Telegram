@@ -4816,4 +4816,11 @@
     <string name="AvailableReactions">Available reactions</string>
     <string name="ReactionsOn">On</string>
     <string name="ReactionsOff">Off</string>
+
+    <string name="Reactions_zero">%1$d Reactions</string>
+    <string name="Reactions_one">%1$d Reaction</string>
+    <string name="Reactions_two">%1$d Reactions</string>
+    <string name="Reactions_few">%1$d Reactions</string>
+    <string name="Reactions_many">%1$d Reactions</string>
+    <string name="Reactions_other">%1$d Reactions</string>
 </resources>

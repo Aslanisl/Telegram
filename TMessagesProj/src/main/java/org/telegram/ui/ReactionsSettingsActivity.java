@@ -36,8 +36,7 @@ import java.util.Iterator;
 
 public class ReactionsSettingsActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
 
-    private static long lastTimeReactionsLoaded = 0;
-    private static final ArrayList<TLRPC.TL_availableReaction> reactions = new ArrayList<>();
+    private ArrayList<TLRPC.TL_availableReaction> reactions = new ArrayList<>();
 
     private final ArrayList<String> availableReactions = new ArrayList<>();
 
@@ -143,7 +142,7 @@ public class ReactionsSettingsActivity extends BaseFragment implements Notificat
         linearLayout.addView(listView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
 
         updateEnableForChatInfo(false);
-        loadReaction(false);
+        loadReaction();
         return linearLayout;
     }
 
@@ -157,6 +156,14 @@ public class ReactionsSettingsActivity extends BaseFragment implements Notificat
                 updateReactionsForInfo();
             }
         }
+        if (id == NotificationCenter.availableReactionsUpdated) {
+            ArrayList<TLRPC.TL_availableReaction> reactions = (ArrayList<TLRPC.TL_availableReaction>) args[0];
+            this.reactions.clear();
+            this.reactions.addAll(reactions);
+            if (adapter != null) {
+                adapter.notifyDataSetChanged();
+            }
+        }
     }
 
     private void updateEnableForChatInfo(boolean animated) {
@@ -167,22 +174,12 @@ public class ReactionsSettingsActivity extends BaseFragment implements Notificat
         setReactionsCheck(isEnabled, animated);
     }
 
-    private void loadReaction(boolean force) {
-        TLRPC.TL_messages_getAvailableReactions availableReactions = new TLRPC.TL_messages_getAvailableReactions();
-        if (System.currentTimeMillis() - lastTimeReactionsLoaded < 3600 * 1000L && !reactions.isEmpty() && !force) {
-            availableReactions.hash = 1;
+    private void loadReaction() {
+        reactions.clear();
+        reactions.addAll(getMessagesController().getAvailableReactions());
+        if (adapter != null) {
+            adapter.notifyDataSetChanged();
         }
-        getConnectionsManager().sendRequest(availableReactions, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
-            if (response instanceof TLRPC.TL_messages_availableReactions) {
-                lastTimeReactionsLoaded = System.currentTimeMillis();
-                TLRPC.TL_messages_availableReactions reactionsResult = (TLRPC.TL_messages_availableReactions) response;
-                reactions.clear();
-                reactions.addAll(reactionsResult.reactions);
-                if (adapter != null) {
-                    adapter.notifyDataSetChanged();
-                }
-            }
-        }));
     }
 
     private void saveReactions() {
@@ -210,7 +207,7 @@ public class ReactionsSettingsActivity extends BaseFragment implements Notificat
             }
             if (error != null && error.code == 400 && error.text.equals("REACTION_INVALID")) {
                 getMessagesController().loadFullChat(chatId, 0, true);
-                loadReaction(true);
+                loadReaction();
             }
         });
     }
@@ -219,6 +216,7 @@ public class ReactionsSettingsActivity extends BaseFragment implements Notificat
     public boolean onFragmentCreate() {
         super.onFragmentCreate();
         getNotificationCenter().addObserver(this, NotificationCenter.chatInfoDidLoad);
+        getNotificationCenter().addObserver(this, NotificationCenter.availableReactionsUpdated);
         return true;
     }
 
@@ -226,6 +224,7 @@ public class ReactionsSettingsActivity extends BaseFragment implements Notificat
     public void onFragmentDestroy() {
         super.onFragmentDestroy();
         getNotificationCenter().removeObserver(this, NotificationCenter.chatInfoDidLoad);
+        getNotificationCenter().removeObserver(this, NotificationCenter.availableReactionsUpdated);
         saveReactions();
     }
 

@@ -1350,6 +1350,16 @@ public class ActionBar extends FrameLayout {
         }
     }
 
+    public static int getCurrentActionBarHeightDP() {
+        if (AndroidUtilities.isTablet()) {
+            return 64;
+        } else if (AndroidUtilities.displaySize.x > AndroidUtilities.displaySize.y) {
+            return 48;
+        } else {
+            return 56;
+        }
+    }
+
     public void setTitleAnimated(CharSequence title, boolean fromBottom, long duration) {
         if (titleTextView[0] == null || title == null) {
             setTitle(title);
