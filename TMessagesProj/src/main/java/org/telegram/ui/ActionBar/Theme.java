@@ -2732,9 +2732,11 @@ public class Theme {
     public static Paint chat_radialProgressPausedPaint;
     public static Paint chat_radialProgressPausedSeekbarPaint;
     public static Paint chat_reactionBackgroundPaint;
+    public static Paint chat_reactionOwnBackgroundPaint;
     public static Paint chat_reactionTransparentBackgroundPaint;
     public static Paint chat_reactionUserBackgroundPaint;
     public static Paint chat_reactionBackgroundSelectedPaint;
+    public static Paint chat_reactionOwnBackgroundSelectedPaint;
     public static Paint chat_reactionBackgroundUnderSelectedPaint;
 
     public static TextPaint chat_msgTextPaint;
@@ -2769,6 +2771,7 @@ public class Theme {
     public static TextPaint chat_contextResult_titleTextPaint;
     public static TextPaint chat_contextResult_descriptionTextPaint;
     public static TextPaint chat_reactionTextPaint;
+    public static TextPaint chat_reactionOwnTextPaint;
     public static TextPaint chat_reactionUnderTextPaint;
 
     public static Drawable chat_msgNoSoundDrawable;
@@ -3448,8 +3451,10 @@ public class Theme {
     public static final String key_chat_recordedVoiceHighlight = "key_chat_recordedVoiceHighlight";
     public static final String key_chat_TextSelectionCursor = "chat_TextSelectionCursor";
     public static final String key_chat_reactionBackground = "key_chat_reactionBackground";
+    public static final String key_chat_reactionOwnBackground = "key_chat_reactionOwnBackground";
     public static final String key_chat_reactionTransparentBackground = "key_chat_reactionTransparentBackground";
     public static final String key_chat_reactionBackgroundSelected = "key_chat_reactionBackgroundSelected";
+    public static final String key_chat_reactionOwnBackgroundSelected = "key_chat_reactionOwnBackgroundSelected";
     public static final String key_chat_reactionUnderBackgroundSelected = "key_chat_reactionUnderBackgroundSelected";
     public static final String key_chat_reactionUnderText = "key_chat_reactionUnderText";
 
@@ -3731,11 +3736,14 @@ public class Theme {
     public static final String key_paint_chatComposeBackground = "paintChatComposeBackground";
     public static final String key_paint_chatTimeBackground = "paintChatTimeBackground";
     public static final String key_paint_chatReactionBackground = "paintChatReactionBackground";
+    public static final String key_paint_chatOwnReactionBackground = "paintChatOwnReactionBackground";
     public static final String key_paint_chatReactionTransparentBackground = "paintChatReactionTransparentBackground";
     public static final String key_paint_chatReactionUserBackground = "paintChatReactionUserBackground";
     public static final String key_paint_chatReactionBackgroundSelected = "paintChatReactionBackgroundSelected";
+    public static final String key_paint_chatOwnReactionBackgroundSelected = "paintChatOwnReactionBackgroundSelected";
     public static final String key_paint_chatReactionUnderBackgroundSelected = "paintChatReactionUnderBackgroundSelected";
     public static final String key_paint_chatReactionText = "paintChatReactionText";
+    public static final String key_paint_chatOwnReactionText = "paintChatOwnReactionText";
     public static final String key_paint_chatUnderReactionText = "paintChatUnderReactionText";
     private static final HashMap<String, Paint> defaultChatPaints = new HashMap<>();
     private static final HashMap<String, String> defaultChatPaintColors = new HashMap<>();
@@ -4264,8 +4272,10 @@ public class Theme {
         defaultColors.put(key_chat_goDownButtonCounter, 0xffffffff);
         defaultColors.put(key_chat_goDownButtonCounterBackground, 0xff4da2e8);
         defaultColors.put(key_chat_reactionBackground, 0x19378DD1);
+        defaultColors.put(key_chat_reactionOwnBackground, 0x175BA756);
         defaultColors.put(key_chat_reactionTransparentBackground, 0x17000000);
         defaultColors.put(key_chat_reactionBackgroundSelected, 0xff599fd8);
+        defaultColors.put(key_chat_reactionOwnBackgroundSelected, 0xff53AC50);
         defaultColors.put(key_chat_reactionUnderText, 0xffffffff);
         defaultColors.put(key_chat_reactionUnderBackgroundSelected, 0xffffffff);
         defaultColors.put(key_chat_messagePanelCancelInlineBot, 0xffadadad);
@@ -8197,6 +8207,8 @@ public class Theme {
             chat_botButtonPaint.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
             chat_reactionTextPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
             chat_reactionTextPaint.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+            chat_reactionOwnTextPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
+            chat_reactionOwnTextPaint.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
             chat_reactionUnderTextPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
             chat_reactionUnderTextPaint.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
             chat_contactNamePaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
@@ -8246,6 +8258,7 @@ public class Theme {
             chat_actionBackgroundSelectedPaint2 = new Paint(Paint.ANTI_ALIAS_FLAG);
 
             chat_reactionBackgroundPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+            chat_reactionOwnBackgroundPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
             chat_reactionTransparentBackgroundPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
             chat_reactionUserBackgroundPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
             chat_reactionUserBackgroundPaint.setStyle(Paint.Style.STROKE);
@@ -8253,6 +8266,9 @@ public class Theme {
             chat_reactionBackgroundSelectedPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
             chat_reactionBackgroundSelectedPaint.setStyle(Paint.Style.STROKE);
             chat_reactionBackgroundSelectedPaint.setStrokeWidth(AndroidUtilities.dp(2));
+            chat_reactionOwnBackgroundSelectedPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+            chat_reactionOwnBackgroundSelectedPaint.setStyle(Paint.Style.STROKE);
+            chat_reactionOwnBackgroundSelectedPaint.setStrokeWidth(AndroidUtilities.dp(2));
             chat_reactionBackgroundUnderSelectedPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
             chat_reactionBackgroundUnderSelectedPaint.setStyle(Paint.Style.STROKE);
             chat_reactionBackgroundUnderSelectedPaint.setStrokeWidth(AndroidUtilities.dp(2));
@@ -8264,11 +8280,14 @@ public class Theme {
             addChatPaint(key_paint_chatComposeBackground, chat_composeBackgroundPaint, key_chat_messagePanelBackground);
             addChatPaint(key_paint_chatTimeBackground, chat_timeBackgroundPaint, key_chat_mediaTimeBackground);
             addChatPaint(key_paint_chatReactionBackground, chat_reactionBackgroundPaint, key_chat_reactionBackground);
+            addChatPaint(key_paint_chatOwnReactionBackground, chat_reactionOwnBackgroundPaint, key_chat_reactionOwnBackground);
             addChatPaint(key_paint_chatReactionTransparentBackground, chat_reactionTransparentBackgroundPaint, key_chat_reactionTransparentBackground);
             addChatPaint(key_paint_chatReactionUserBackground, chat_reactionUserBackgroundPaint, key_chat_reactionBackground);
             addChatPaint(key_paint_chatReactionBackgroundSelected, chat_reactionBackgroundSelectedPaint, key_chat_reactionBackgroundSelected);
+            addChatPaint(key_paint_chatOwnReactionBackgroundSelected, chat_reactionOwnBackgroundSelectedPaint, key_chat_reactionOwnBackgroundSelected);
             addChatPaint(key_paint_chatReactionUnderBackgroundSelected, chat_reactionBackgroundUnderSelectedPaint, key_chat_reactionUnderBackgroundSelected);
             addChatPaint(key_paint_chatReactionText, chat_reactionTextPaint, key_chat_reactionBackground);
+            addChatPaint(key_paint_chatOwnReactionText, chat_reactionOwnTextPaint, key_chat_reactionOwnBackground);
             addChatPaint(key_paint_chatUnderReactionText, chat_reactionUnderTextPaint, key_chat_reactionUnderText);
         }
     }
@@ -8589,6 +8608,7 @@ public class Theme {
             chat_pollTimerPaint.setStrokeWidth(AndroidUtilities.dp(1.1f));
             chat_actionTextPaint.setTextSize(AndroidUtilities.dp(Math.max(16, SharedConfig.fontSize) - 2));
             chat_reactionTextPaint.setTextSize(AndroidUtilities.dp(14));
+            chat_reactionOwnTextPaint.setTextSize(AndroidUtilities.dp(14));
             chat_reactionUnderTextPaint.setTextSize(AndroidUtilities.dp(14));
             chat_contextResult_titleTextPaint.setTextSize(AndroidUtilities.dp(15));
             chat_contextResult_descriptionTextPaint.setTextSize(AndroidUtilities.dp(13));
@@ -8943,10 +8963,13 @@ public class Theme {
         currentColor = serviceColor;
 
         chat_reactionBackgroundPaint.setColor(getColor(key_chat_reactionBackground));
+        chat_reactionOwnBackgroundPaint.setColor(getColor(key_chat_reactionOwnBackground));
         chat_reactionUserBackgroundPaint.setColor(getColor(key_chat_reactionBackground));
+        chat_reactionOwnBackgroundSelectedPaint.setColor(getColor(key_chat_reactionOwnBackgroundSelected));
         chat_reactionBackgroundSelectedPaint.setColor(getColor(key_chat_reactionBackgroundSelected));
         chat_reactionBackgroundUnderSelectedPaint.setColor(getColor(key_chat_reactionUnderBackgroundSelected));
         chat_reactionTextPaint.setColor(getColor(key_chat_reactionBackgroundSelected));
+        chat_reactionOwnTextPaint.setColor(getColor(key_chat_reactionOwnBackgroundSelected));
         chat_reactionUnderTextPaint.setColor(getColor(key_chat_reactionUnderText));
 
         if (serviceBitmapShader != null && (currentColors.get(key_chat_serviceBackground) == null || drawable instanceof MotionBackgroundDrawable)) {

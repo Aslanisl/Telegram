@@ -2188,7 +2188,16 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
             float y = event.getY();
             if (event.getAction() == MotionEvent.ACTION_DOWN) {
                 if (delegate == null || delegate.canPerformActions()) {
-                    if (isAvatarVisible && avatarImage.isInsideImage(x, y + getTop())) {
+                    if (!reactionButtons.isEmpty() && !isDrawUserSmallReactions()) {
+                        for (int i = 0; i < reactionButtons.size(); i++) {
+                            ReactionButton button = reactionButtons.get(i);
+                            if (button.x + getReactionsAddX() < x && x < (button.x + getReactionsAddX() + button.width) && button.y < y && y < (button.y + button.height)) {
+                                pressedReactionButton = button;
+                                result = true;
+                                break;
+                            }
+                        }
+                    } else if (isAvatarVisible && avatarImage.isInsideImage(x, y + getTop())) {
                         avatarPressed = true;
                         result = true;
                     } else if (psaButtonVisible && hasPsaHint && x >= psaHelpX && x <= psaHelpX + AndroidUtilities.dp(40) && y >= psaHelpY && y <= psaHelpY + AndroidUtilities.dp(40)) {
@@ -2228,15 +2237,6 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                         if (x >= replyStartX && x <= replyEnd && y >= replyStartY && y <= replyStartY + AndroidUtilities.dp(35)) {
                             replyPressed = true;
                             result = true;
-                        }
-                    } else if (!reactionButtons.isEmpty() && !isDrawUserSmallReactions()) {
-                        for (int i = 0; i < reactionButtons.size(); i++) {
-                            ReactionButton button = reactionButtons.get(i);
-                            if (button.x + getReactionsAddX() < x && x < (button.x + getReactionsAddX() + button.width) && button.y < y && y < (button.y + button.height)) {
-                                pressedReactionButton = button;
-                                result = true;
-                                break;
-                            }
                         }
                     }
                     if (result) {
@@ -3499,6 +3499,10 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
             lastAvailableReactions.clear();
             lastAvailableReactions.addAll(availableReactions);
 
+            if (messageIdChanged) {
+                pollReactionButtons.clear();
+            }
+
             if (messageObject.hasReactions() && !availableReactions.isEmpty()) {
                 int elementSize = AndroidUtilities.dp(16);
                 int margin = AndroidUtilities.dp(5);
@@ -3542,7 +3546,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                             userReactions.add(userReaction);
                         }
                     }
-                    if (!userReactions.isEmpty()) {
+                    if (!userReactions.isEmpty() && reaction.count <= 3) {
                         button.userReactions = userReactions;
                         for (int i = 0; i < userReactions.size(); i++) {
                             TLRPC.TL_messageUserReaction userReaction = userReactions.get(i);
@@ -3581,7 +3585,11 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                     } else {
                         AnimatedNumberLayout numberLayout;
                         if (drawBackground) {
-                            numberLayout = new AnimatedNumberLayout(this, Theme.chat_reactionTextPaint);
+                            if (getMessageObject().isOutOwner()) {
+                                numberLayout = new AnimatedNumberLayout(this, Theme.chat_reactionOwnTextPaint);
+                            } else {
+                                numberLayout = new AnimatedNumberLayout(this, Theme.chat_reactionTextPaint);
+                            }
                         } else {
                             numberLayout = new AnimatedNumberLayout(this, Theme.chat_reactionUnderTextPaint);
                         }
@@ -5982,7 +5990,11 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                     if (button.userReactions == null) {
                         if (button.countLayout == null) {
                             if (drawBackground) {
-                                button.countLayout = new AnimatedNumberLayout(this, Theme.chat_reactionTextPaint);
+                                if (getMessageObject().isOutOwner()) {
+                                    button.countLayout = new AnimatedNumberLayout(this, Theme.chat_reactionOwnTextPaint);
+                                } else {
+                                    button.countLayout = new AnimatedNumberLayout(this, Theme.chat_reactionTextPaint);
+                                }
                             } else {
                                 button.countLayout = new AnimatedNumberLayout(this, Theme.chat_reactionUnderTextPaint);
                             }
@@ -6465,7 +6477,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                     }
                     handled = delegate.didLongPressChannelAvatar(this, currentChat, id, lastTouchX, lastTouchY);
                 }
-            } else if (pressedReactionButton != null) {
+            } else if (pressedReactionButton != null && !DialogObject.isUserDialog(getMessageObject().getDialogId()) && !(currentChat != null && ChatObject.isChannel(currentChat) && !currentChat.megagroup)) {
                 handled = delegate.didLongPressReaction(this, pressedReactionButton.reaction);
                 pressedReactionButton = null;
             }
@@ -8509,7 +8521,11 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
 
             rect.set(button.x + addX, y, button.x + addX + button.width, y + button.height);
             if (drawBackground) {
-                canvas.drawRoundRect(rect, button.height / 2f, button.height / 2f, getThemedPaint(Theme.key_paint_chatReactionBackground));
+                if (getMessageObject().isOutOwner()) {
+                    canvas.drawRoundRect(rect, button.height / 2f, button.height / 2f, getThemedPaint(Theme.key_paint_chatOwnReactionBackground));
+                } else {
+                    canvas.drawRoundRect(rect, button.height / 2f, button.height / 2f, getThemedPaint(Theme.key_paint_chatReactionBackground));
+                }
             } else {
                 applyServiceShaderMatrix(getMeasuredWidth(), backgroundHeight, getX(), viewTop);
                 canvas.drawRoundRect(rect, button.height / 2f, button.height / 2f, getThemedPaint(a == pressedBotButton ? Theme.key_paint_chatActionBackgroundSelected : Theme.key_paint_chatActionBackground));
@@ -8519,7 +8535,11 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
             }
             if (button.reaction.chosen) {
                 if (drawBackground) {
-                    canvas.drawRoundRect(rect, button.height / 2f, button.height / 2f, getThemedPaint(Theme.key_paint_chatReactionBackgroundSelected));
+                    if (getMessageObject().isOutOwner()) {
+                        canvas.drawRoundRect(rect, button.height / 2f, button.height / 2f, getThemedPaint(Theme.key_paint_chatOwnReactionBackgroundSelected));
+                    } else {
+                        canvas.drawRoundRect(rect, button.height / 2f, button.height / 2f, getThemedPaint(Theme.key_paint_chatReactionBackgroundSelected));
+                    }
                 } else {
                     canvas.drawRoundRect(rect, button.height / 2f, button.height / 2f, Theme.chat_reactionBackgroundUnderSelectedPaint);
                 }
@@ -8555,7 +8575,11 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                 }
             } else if (button.countLayout != null) {
                 if (drawBackground) {
-                    Theme.chat_reactionTextPaint.setAlpha((int) (255 * alpha));
+                    if (getMessageObject().isOutOwner()) {
+                        Theme.chat_reactionOwnTextPaint.setAlpha((int) (255 * alpha));
+                    } else {
+                        Theme.chat_reactionTextPaint.setAlpha((int) (255 * alpha));
+                    }
                 } else {
                     Theme.chat_reactionUnderTextPaint.setAlpha((int) (255 * alpha));
                 }

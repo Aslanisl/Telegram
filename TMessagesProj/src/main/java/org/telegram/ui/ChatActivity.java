@@ -20039,7 +20039,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 ShadowSectionCell sectionCell = new ShadowSectionCell(contentView.getContext(), 12, Theme.getColor(Theme.key_windowBackgroundGray));
                 popupLayout.addView(sectionCell);
 
-                final ReactionsMenuView menuView = new ReactionsMenuView(ChatActivity.this, message, currentAccount, new ReactionsMenuView.Delegate() {
+                final ReactionsMenuView menuView = new ReactionsMenuView(ChatActivity.this, message, currentAccount, null, new ReactionsMenuView.Delegate() {
                     @Override
                     public void onBackPressed(ReactionsMenuView view) {
                         view.setVisibility(View.GONE);
@@ -23138,10 +23138,28 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
 
                     @Override
                     public boolean didLongPressReaction(ChatMessageCell cell, TLRPC.TL_reactionCount reaction) {
-                        //TODO Long press reaction
-                        Log.d("TAGLOG", "Long press reaction");
-//                        ReactionsMenuView
-//                        showScrimPopupWindow(new ReactionsMenuView(ChatActivity.this, cell.getMessageObject()), cell, new Rect(), 0f, 0f);
+                        ArrayList<TLRPC.TL_availableReaction> availableReactions = getMessagesController().getAvailableReactions();
+                        TLRPC.TL_availableReaction currentAvailableReaction = null;
+                        for (int i = 0; i < availableReactions.size(); i++) {
+                            TLRPC.TL_availableReaction availableReaction = availableReactions.get(i);
+                            if (availableReaction.reaction.equals(reaction.reaction)) {
+                                currentAvailableReaction = availableReaction;
+                                break;
+                            }
+                        }
+                        final ReactionsMenuView menuView = new ReactionsMenuView(ChatActivity.this, cell.getMessageObject(), currentAccount, currentAvailableReaction, new ReactionsMenuView.Delegate() {
+                            @Override
+                            public void onBackPressed(ReactionsMenuView view) {
+                            }
+
+                            @Override
+                            public void dismiss() {
+                                if (scrimPopupWindow != null) {
+                                    scrimPopupWindow.dismiss();
+                                }
+                            }
+                        });
+                        showScrimPopupWindow(menuView, cell, new Rect(), 0f, 0f);
                         return true;
                     }
 

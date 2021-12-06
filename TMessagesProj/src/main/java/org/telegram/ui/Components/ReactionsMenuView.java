@@ -27,6 +27,7 @@ import android.widget.TextView;
 
 import androidx.annotation.Keep;
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -156,14 +157,16 @@ public class ReactionsMenuView extends FrameLayout implements NotificationCenter
     private HashMap<String, ReactionAdapter> reactionListAdapter = new HashMap();
     private HashMap<String, ReactionsEntity> reactionEntities = new HashMap();
     private HashSet<String> reqIds = new HashSet<>();
+    private TLRPC.TL_availableReaction availableReaction;
 
-    public ReactionsMenuView(ChatActivity parentFragment, MessageObject message, int currentAccount, Delegate delegate) {
+    public ReactionsMenuView(ChatActivity parentFragment, MessageObject message, int currentAccount, @Nullable TLRPC.TL_availableReaction availableReaction, Delegate delegate) {
         super(parentFragment.contentView.getContext());
         this.delegate = delegate;
         messageObject = message;
         chatActivity = parentFragment;
         this.currentAccount = currentAccount;
         Context context = parentFragment.getParentActivity();
+        this.availableReaction = availableReaction;
 
         setWillNotDraw(false);
         updatePlaceholder();
@@ -173,35 +176,37 @@ public class ReactionsMenuView extends FrameLayout implements NotificationCenter
         shadowDrawable2.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_actionBarDefaultSubmenuBackground), PorterDuff.Mode.MULTIPLY));
         setBackground(shadowDrawable2);
 
-        actionBar = new ActionBar(context);
-        actionBar.setBackButtonImage(R.drawable.ic_ab_back);
-        actionBar.setTitleColor(Theme.getColor(Theme.key_dialogTextBlack));
-        actionBar.setItemsColor(Theme.getColor(Theme.key_dialogTextBlack), false);
-        actionBar.setOccupyStatusBar(false);
-        actionBar.setTitle(LocaleController.getString("Back", R.string.Back));
-        addView(actionBar, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
-        actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
-            @Override
-            public void onItemClick(int id) {
-                if (id == -1 && delegate != null) {
-                    delegate.onBackPressed(ReactionsMenuView.this);
+        if (availableReaction == null) {
+            actionBar = new ActionBar(context);
+            actionBar.setBackButtonImage(R.drawable.ic_ab_back);
+            actionBar.setTitleColor(Theme.getColor(Theme.key_dialogTextBlack));
+            actionBar.setItemsColor(Theme.getColor(Theme.key_dialogTextBlack), false);
+            actionBar.setOccupyStatusBar(false);
+            actionBar.setTitle(LocaleController.getString("Back", R.string.Back));
+            addView(actionBar, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+            actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
+                @Override
+                public void onItemClick(int id) {
+                    if (id == -1 && delegate != null) {
+                        delegate.onBackPressed(ReactionsMenuView.this);
+                    }
                 }
+            });
+
+            if (messageObject == null || !messageObject.hasReactions()) {
+                return;
             }
-        });
 
-        if (messageObject == null || !messageObject.hasReactions()) {
-            return;
+            tabListView = new RecyclerListView(getContext());
+            tabListView.setItemAnimator(null);
+            tabListView.setLayoutManager(new LinearLayoutManager(getContext(), LinearLayoutManager.HORIZONTAL, false));
+            tabListView.setAdapter(tabAdapter = new TabAdapter());
+            tabListView.setPadding(AndroidUtilities.dp(tabPadding + tabPadding), AndroidUtilities.dp(tabPadding), AndroidUtilities.dp(tabPadding), AndroidUtilities.dp(tabPadding));
+            tabListView.setOnItemClickListener((view, position) -> {
+                viewPager.setCurrentItem(position, true);
+            });
+            addView(tabListView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, tabHeight + 2 * tabPadding, Gravity.LEFT, 0, ActionBar.getCurrentActionBarHeightDP(), 0, 0));
         }
-
-        tabListView = new RecyclerListView(getContext());
-        tabListView.setItemAnimator(null);
-        tabListView.setLayoutManager(new LinearLayoutManager(getContext(), LinearLayoutManager.HORIZONTAL, false));
-        tabListView.setAdapter(tabAdapter = new TabAdapter());
-        tabListView.setPadding(AndroidUtilities.dp(tabPadding + tabPadding), AndroidUtilities.dp(tabPadding), AndroidUtilities.dp(tabPadding), AndroidUtilities.dp(tabPadding));
-        tabListView.setOnItemClickListener((view, position) -> {
-            viewPager.setCurrentItem(position, true);
-        });
-        addView(tabListView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, tabHeight + 2 * tabPadding, Gravity.LEFT, 0, ActionBar.getCurrentActionBarHeightDP(), 0, 0));
 
         viewPager = new ViewPager(getContext());
         viewPager.setAdapter(viewPagerAdapter = new ViewPagerAdapter());
@@ -211,15 +216,21 @@ public class ReactionsMenuView extends FrameLayout implements NotificationCenter
                 super.onPageSelected(position);
                 selectedTab = position;
                 tabListView.smoothScrollToPosition(position);
-                tabAdapter.notifyDataSetChanged();
+                if (tabAdapter != null) {
+                    tabAdapter.notifyDataSetChanged();
+                }
             }
         });
-        addView(viewPager, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, cellHeight * 7.5f, Gravity.LEFT, 0, ActionBar.getCurrentActionBarHeightDP() + tabHeight + 2 * tabPadding, 0, 0));
 
-        actionBarShadow = new View(context);
-        actionBarShadow.setBackgroundColor(Theme.getColor(Theme.key_dialogShadowLine));
-        addView(actionBarShadow, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 1, Gravity.LEFT, 0, ActionBar.getCurrentActionBarHeightDP() + tabHeight + 2 * tabPadding, 0, 0));
+        if (availableReaction == null) {
+            addView(viewPager, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, cellHeight * 7.5f, Gravity.LEFT, 0, ActionBar.getCurrentActionBarHeightDP() + tabHeight + 2 * tabPadding, 0, 0));
+        }
 
+        if (availableReaction == null) {
+            actionBarShadow = new View(context);
+            actionBarShadow.setBackgroundColor(Theme.getColor(Theme.key_dialogShadowLine));
+            addView(actionBarShadow, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 1, Gravity.LEFT, 0, ActionBar.getCurrentActionBarHeightDP() + tabHeight + 2 * tabPadding, 0, 0));
+        }
         ArrayList<TLRPC.TL_availableReaction> availableReactions = MessagesController.getInstance(currentAccount).getAvailableReactions();
         updateView(availableReactions);
     }
@@ -255,7 +266,13 @@ public class ReactionsMenuView extends FrameLayout implements NotificationCenter
 
         for (int i = 0; i < messageObject.messageOwner.reactions.results.size(); i++) {
             TLRPC.TL_reactionCount reactionCount = messageObject.messageOwner.reactions.results.get(i);
-            reactionsCount += reactionCount.count;
+            if (availableReaction == null) {
+                reactionsCount += reactionCount.count;
+            } else {
+                if (reactionCount.reaction.equals(availableReaction.reaction)) {
+                    reactionsCount += reactionCount.count;
+                }
+            }
 
             for (int a = 0; a < reactions.size(); a++) {
                 TLRPC.TL_availableReaction availableReaction = reactions.get(a);
@@ -266,16 +283,23 @@ public class ReactionsMenuView extends FrameLayout implements NotificationCenter
                 }
             }
         }
-        createListViewForReaction(null, reactionsCount);
 
-        for (int i = 0; i < currentReactions.size(); i++) {
-            TLRPC.TL_availableReaction currentReaction = currentReactions.get(i);
-            Integer currentCount = currentReactionsCount.get(i);
-            createListViewForReaction(currentReaction, currentCount);
+        createListViewForReaction(availableReaction, reactionsCount, availableReaction != null);
+
+        if (availableReaction == null) {
+            for (int i = 0; i < currentReactions.size(); i++) {
+                TLRPC.TL_availableReaction currentReaction = currentReactions.get(i);
+                Integer currentCount = currentReactionsCount.get(i);
+                createListViewForReaction(currentReaction, currentCount, false);
+            }
         }
 
-        tabAdapter.notifyDataSetChanged();
-        viewPagerAdapter.notifyDataSetChanged();
+        if (tabAdapter != null) {
+            tabAdapter.notifyDataSetChanged();
+        }
+        if (viewPagerAdapter != null) {
+            viewPagerAdapter.notifyDataSetChanged();
+        }
     }
 
     private void loadMessageReactionsList(String reaction, String next_offset) {
@@ -295,14 +319,15 @@ public class ReactionsMenuView extends FrameLayout implements NotificationCenter
         }
         if (next_offset != null) {
             req.offset = next_offset;
+            req.flags |= 2;
         }
         chatActivity.getConnectionsManager().sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
             if (response != null) {
                 TLRPC.TL_messages_messageReactionsList res = (TLRPC.TL_messages_messageReactionsList) response;
                 chatActivity.getMessagesController().putUsers(res.users, false);
+                addReactions(reaction, res);
                 ReactionAdapter adapter = reactionListAdapter.get(reaction);
                 if (adapter != null) {
-                    addReactions(reaction, res);
                     adapter.notifyDataSetChanged();
                 }
             }
@@ -357,9 +382,13 @@ public class ReactionsMenuView extends FrameLayout implements NotificationCenter
         }
     }
 
-    private void createListViewForReaction(TLRPC.TL_availableReaction availableReaction, int count) {
+    private void createListViewForReaction(TLRPC.TL_availableReaction availableReaction, int count, boolean exacltySize) {
         String reaction = availableReaction == null ? "null" : availableReaction.reaction;
         RecyclerListView listView = new RecyclerListView(getContext());
+        if (exacltySize) {
+            addView(viewPager, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, count > 7 ? cellHeight * 7.5f : cellHeight * count));
+            requestLayout();
+        }
         listView.setClipToPadding(false);
         LinearLayoutManager layoutManager = new LinearLayoutManager(getContext(), LinearLayoutManager.VERTICAL, false);
         listView.setLayoutManager(layoutManager);
