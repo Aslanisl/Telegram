@@ -43,6 +43,7 @@ import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.Adapters.DrawerLayoutAdapter;
+import org.telegram.ui.Components.CastVideoPlayer;
 import org.telegram.ui.Components.ForegroundDetector;
 import org.telegram.ui.Components.Premium.boosts.BoostRepository;
 import org.telegram.ui.IUpdateLayout;
@@ -292,6 +293,8 @@ public class ApplicationLoader extends Application {
         if (applicationContext == null) {
             applicationContext = getApplicationContext();
         }
+
+        CastVideoPlayer.getInstance().initPlayer(getApplicationContext());
 
         NativeLoader.initNativeLibs(ApplicationLoader.applicationContext);
         try {

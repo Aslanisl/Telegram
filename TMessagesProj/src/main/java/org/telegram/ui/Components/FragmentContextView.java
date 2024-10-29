@@ -47,9 +47,6 @@ import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.TextView;
 
-import androidx.annotation.IntDef;
-import androidx.annotation.Keep;
-
 import org.telegram.messenger.AccountInstance;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.AnimationNotificationsLocker;
@@ -85,6 +82,9 @@ import org.telegram.ui.LocationActivity;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.util.ArrayList;
+
+import androidx.annotation.IntDef;
+import androidx.annotation.Keep;
 
 public class FragmentContextView extends FrameLayout implements NotificationCenter.NotificationCenterDelegate, VoIPService.StateListener {
     public final static int STYLE_NOT_SET = -1,
@@ -210,8 +210,8 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
     private boolean checkPlayerAfterAnimation;
     private boolean checkImportAfterAnimation;
 
-    private final static float[] speeds = new float[] {
-        .5f, 1f, 1.2f, 1.5f, 1.7f, 2f
+    private final static float[] speeds = new float[]{
+            .5f, 1f, 1.2f, 1.5f, 1.7f, 2f
     };
 
     @Override
@@ -448,10 +448,10 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
             private void updateJoinButtonWidth(int width) {
                 if (joinButtonWidth != width) {
                     titleTextView.setPadding(
-                        titleTextView.getPaddingLeft(),
-                        titleTextView.getPaddingTop(),
-                        titleTextView.getPaddingRight() - joinButtonWidth + width,
-                        titleTextView.getPaddingBottom()
+                            titleTextView.getPaddingLeft(),
+                            titleTextView.getPaddingTop(),
+                            titleTextView.getPaddingRight() - joinButtonWidth + width,
+                            titleTextView.getPaddingBottom()
                     );
                     joinButtonWidth = width;
                 }
@@ -736,7 +736,19 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
                 if (call == null) {
                     return;
                 }
-                VoIPHelper.startCall(fragment.getMessagesController().getChat(call.chatId), null, null, false, call.call != null && !call.call.rtmp_stream, fragment.getParentActivity(), fragment, fragment.getAccountInstance());
+                if (call.call.schedule_start_subscribed || ChatObject.canManageCalls((fragment.getMessagesController().getChat(call.chatId)))) {
+                    VoIPHelper.startCall(fragment.getMessagesController().getChat(call.chatId), null, null, false, call.call != null && !call.call.rtmp_stream, fragment.getParentActivity(), fragment, fragment.getAccountInstance());
+                } else {
+                    TLRPC.TL_phone_toggleGroupCallStartSubscription req = new TLRPC.TL_phone_toggleGroupCallStartSubscription();
+                    req.call = call.getInputGroupCall();
+                    req.subscribed = true;
+                    fragment.getConnectionsManager().sendRequest(req, (response, error) -> {
+                        if (response != null) {
+                            fragment.getMessagesController().processUpdates((TLRPC.Updates) response, false);
+                        }
+                    });
+                    BulletinFactory.of(fragment).createSimpleBulletin(R.raw.silent_unmute, LocaleController.getString(R.string.VoipChannelNotifyMessageChat)).show();
+                }
             } else if (currentStyle == STYLE_IMPORTING_MESSAGES) {
                 SendMessagesHelper.ImportingHistory importingHistory = fragment.getSendMessagesHelper().getImportingHistory(((ChatActivity) fragment).getDialogId());
                 if (importingHistory == null) {
@@ -774,7 +786,7 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
             }
         });
         playbackSpeedButton.setIcon(speedIcon = new SpeedIconDrawable(true));
-        final float[] toggleSpeeds = new float[] { 1.0F, 1.5F, 2F };
+        final float[] toggleSpeeds = new float[]{1.0F, 1.5F, 2F};
         speedSlider = new ActionBarMenuSlider.SpeedSlider(getContext(), resourcesProvider);
         speedSlider.setRoundRadiusDp(6);
         speedSlider.setDrawShadow(true);
@@ -862,7 +874,8 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
                     if (visibility != View.VISIBLE) {
                         try {
                             ((ViewGroup) getParent()).removeView(this);
-                        } catch (Exception e) {}
+                        } catch (Exception e) {
+                        }
                     }
                 }
             };
@@ -1321,10 +1334,7 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
                 muteButton.invalidate();
             }
         } else if (currentStyle == STYLE_INACTIVE_GROUP_CALL) {
-            if (!scheduleRunnableScheduled) {
-                scheduleRunnableScheduled = true;
-                updateScheduleTimeRunnable.run();
-            }
+            updateTimeLayout();
         }
 
         if (visible && topPadding == 0) {
@@ -1334,6 +1344,31 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
 
         speakerAmplitude = 0;
         micAmplitude = 0;
+    }
+
+    private void updateTimeLayout() {
+        ChatObject.Call call = chatActivity.getGroupCall();
+        if (call == null) {
+            return;
+        }
+        if (ChatObject.canManageCalls(fragment.getMessagesController().getChat(call.chatId))) {
+            if (!scheduleRunnableScheduled) {
+                scheduleRunnableScheduled = true;
+                updateScheduleTimeRunnable.run();
+            }
+        } else {
+            if (!scheduleRunnableScheduled && call.call.schedule_start_subscribed) {
+                scheduleRunnableScheduled = true;
+                updateScheduleTimeRunnable.run();
+            } else if (!call.call.schedule_start_subscribed) {
+                scheduleRunnableScheduled = false;
+                AndroidUtilities.cancelRunOnUIThread(updateScheduleTimeRunnable);
+                String str = LocaleController.getString(R.string.VoipChannelNotifyMeVoiceChat);
+                int width = (int) Math.ceil(gradientTextPaint.measureText(str));
+                timeLayout = new StaticLayout(str, gradientTextPaint, width, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
+                frameLayout.invalidate();
+            }
+        }
     }
 
     @Override
@@ -2114,10 +2149,7 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
                         }
                     }
                     subtitleTextView.setText(LocaleController.formatStartsTime(call.call.schedule_date, 4), false);
-                    if (!scheduleRunnableScheduled) {
-                        scheduleRunnableScheduled = true;
-                        updateScheduleTimeRunnable.run();
-                    }
+                    updateTimeLayout();
                 } else {
                     timeLayout = null;
                     joinButton.setVisibility(VISIBLE);
@@ -2199,6 +2231,7 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
     }
 
     private boolean flickOnAttach;
+
     private void startJoinFlickerAnimation() {
         if (joinButtonFlicker != null && joinButtonFlicker.getProgress() >= 1) {
             flickOnAttach = false;

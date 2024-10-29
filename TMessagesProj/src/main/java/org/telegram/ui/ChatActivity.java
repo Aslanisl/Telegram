@@ -9,6 +9,7 @@
 package org.telegram.ui;
 
 import static org.telegram.messenger.AndroidUtilities.dp;
+import static org.telegram.messenger.AndroidUtilities.statusBarHeight;
 import static org.telegram.messenger.LocaleController.formatString;
 import static org.telegram.messenger.LocaleController.getString;
 
@@ -76,7 +77,6 @@ import android.text.style.ClickableSpan;
 import android.text.style.ForegroundColorSpan;
 import android.text.style.ImageSpan;
 import android.text.style.URLSpan;
-import android.util.Log;
 import android.util.Pair;
 import android.util.Property;
 import android.util.SparseArray;
@@ -222,6 +222,7 @@ import org.telegram.ui.Cells.ContextLinkCell;
 import org.telegram.ui.Cells.DialogCell;
 import org.telegram.ui.Cells.MentionCell;
 import org.telegram.ui.Cells.ProfileChannelCell;
+import org.telegram.ui.Cells.QuickShareDialogCell;
 import org.telegram.ui.Cells.ShareDialogCell;
 import org.telegram.ui.Cells.StickerCell;
 import org.telegram.ui.Cells.TextSelectionHelper;
@@ -265,7 +266,6 @@ import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.net.IDN;
 import java.net.URLDecoder;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -410,11 +410,14 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
     private HintView2 groupEmojiPackHint;
     private HintView2 botMessageHint;
     private HintView2 factCheckHint;
+    private HintView2 botStartHint;
 
     private int reactionsMentionCount;
     private FrameLayout reactionsMentiondownButton;
     private CounterView reactionsMentiondownButtonCounter;
     private ImageView reactionsMentiondownButtonImage;
+
+    private QuickShareContainerLayout quickShareContainerView;
 
     private TL_stories.TL_premium_boostsStatus boostsStatus;
     private ChannelBoostsController.CanApplyBoost canApplyBoosts;
@@ -4224,6 +4227,9 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
 
             @Override
             public boolean onInterceptTouchEvent(MotionEvent e) {
+                if (quickShareContainerView != null && quickShareContainerView.getVisibility() == VISIBLE) {
+                    return quickShareContainerView.onChatTouchEvent(e);
+                }
                 textSelectionHelper.checkSelectionCancel(e);
                 if (isFastScrollAnimationRunning()) {
                     return false;
@@ -4428,6 +4434,9 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             }
 
             private void processTouchEvent(MotionEvent e) {
+                if (quickShareContainerView != null && quickShareContainerView.getVisibility() == VISIBLE && quickShareContainerView.onChatTouchEvent(e)) {
+                    return;
+                }
                 if (e != null) {
                     wasManualScroll = true;
                 }
@@ -4516,6 +4525,9 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
 
             @Override
             public boolean onTouchEvent(MotionEvent e) {
+                if (quickShareContainerView != null && quickShareContainerView.getVisibility() == VISIBLE) {
+                    return quickShareContainerView.onChatTouchEvent(e);
+                }
                 textSelectionHelper.checkSelectionCancel(e);
                 if (e.getAction() == MotionEvent.ACTION_DOWN) {
                     scrollByTouch = true;
@@ -7959,6 +7971,20 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         if (currentUser != null && currentUser.bot && currentUser.id != UserObject.VERIFY && !UserObject.isDeleted(currentUser) && !UserObject.isReplyUser(currentUser) && !isInScheduleMode() && chatMode != MODE_PINNED && chatMode != MODE_SAVED && !isReport()) {
             bottomOverlayStartButton.setVisibility(View.VISIBLE);
             bottomOverlayChat.setVisibility(View.VISIBLE);
+
+            if (!MessagesController.getGlobalMainSettings().getBoolean("botStartHintShown", false)) {
+                MessagesController.getGlobalMainSettings().edit().putBoolean("botStartHintShown", true).apply();
+                AnimatedArrowsDownDrawable icon = new AnimatedArrowsDownDrawable(0xffffffff);
+                botStartHint = new HintView2(getContext(), HintView2.DIRECTION_BOTTOM)
+                        .setText(LocaleController.getString(R.string.BotTapHint))
+                        .setRounding(12)
+                        .setIcon(icon)
+                        .setDuration(-1)
+                        .setIconMargin(0)
+                        .setInnerPadding(14, 4, 14, 4);
+                contentView.addView(botStartHint, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 100, Gravity.BOTTOM | Gravity.FILL_HORIZONTAL, 16, 0, 16, 72));
+                botStartHint.setOnHiddenListener(() -> contentView.removeView(botStartHint));
+            }
         }
 
         bottomOverlayLinksText = new LinkSpanDrawable.LinksTextView(context, themeDelegate);
@@ -23797,6 +23823,9 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         if (factCheckHint != null) {
             factCheckHint.hide();
         }
+        if (botStartHint != null && botStartHint.shown()) {
+            botStartHint.hide();
+        }
     }
 
     private int getStableIdForDateObject(int date) {
@@ -25206,6 +25235,9 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
 //                bottomOverlayStartButton.setText(LocaleController.getString(R.string.BotStart));
                 if (bottomOverlayStartButton != null) {
                     bottomOverlayStartButton.setVisibility(View.VISIBLE);
+                    if (botStartHint != null && !botStartHint.shown()) {
+                        botStartHint.show();
+                    }
                 }
                 bottomOverlayChatText.setVisibility(View.GONE);
                 chatActivityEnterView.hidePopup(false);
@@ -35345,6 +35377,104 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 AndroidUtilities.setAdjustResizeToNothing(getParentActivity(), classGuid);
                 fragmentView.requestLayout();
             }
+        }
+
+        @Override
+        public boolean didLongPressSideButton(ChatMessageCell cell, float startSendButtonX, float endSendButtonX, float topSendButtonY, float bottomSendButtonY) {
+            if (quickShareContainerView == null) {
+                quickShareContainerView = new QuickShareContainerLayout(getContext(), ChatActivity.this, themeDelegate) {
+                    @Override
+                    protected void onSend(TLRPC.Dialog selectedDialog, QuickShareDialogCell selectedCell, int count) {
+                        createUndoView();
+                        if (undoView == null) {
+                            return;
+                        }
+                        if (count == 1) {
+                            if (selectedDialog.id != getUserConfig().getClientUserId() || !BulletinFactory.of(ChatActivity.this).showForwardedBulletinWithTag(selectedDialog.id, count)) {
+                                undoView.showWithAction(selectedDialog.id, UndoView.ACTION_FWD_MESSAGES, count, null, null, null);
+                                showCellAnimation(selectedCell);
+                            }
+                        } else {
+                            undoView.showWithAction(0, UndoView.ACTION_FWD_MESSAGES, count, count, null, null);
+                            showCellAnimation(selectedCell);
+                        }
+                    }
+                };
+                contentView.addView(quickShareContainerView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.TOP));
+            }
+            MessageObject messageObject = cell.getMessageObject();
+            ArrayList<MessageObject> arrayList = null;
+            if (messageObject.getGroupId() != 0) {
+                MessageObject.GroupedMessages groupedMessages = groupedMessagesMap.get(messageObject.getGroupId());
+                if (groupedMessages != null) {
+                    arrayList = groupedMessages.messages;
+                }
+            }
+            if (arrayList == null) {
+                arrayList = new ArrayList<>();
+                arrayList.add(messageObject);
+            }
+            int[] cords = new int[2];
+            actionBar.getLocationOnScreen(cords);
+            final int actionBarTop = cords[1];
+            final int actionBatBottom = actionBarTop + actionBar.getMeasuredHeight();
+            chatListView.getLocationOnScreen(cords);
+            final int chatListY = cords[1];
+            final int keyboardCompensation = actionBatBottom - cords[1];
+            final int cellY = (int) cell.getY() - keyboardCompensation;
+
+            quickShareContainerView.showForPosition(contentView, cell, chatListY, cellY, arrayList);
+            return true;
+        }
+
+        private long duration = 300;
+
+        private void showCellAnimation(QuickShareDialogCell selectedCell) {
+            undoView.post(() -> {
+                int[] undoPosition = new int[2];
+                undoPosition[0] = (int) undoView.getX() + dp(10);
+                undoPosition[1] = (int) (undoView.getY() + undoView.getTranslationY());
+
+                ValueAnimator shareCellXAnimator = ValueAnimator.ofFloat(selectedCell.getTranslationX(), undoPosition[0]);
+                shareCellXAnimator.setDuration(duration);
+                shareCellXAnimator.setInterpolator(CubicBezierInterpolator.EASE_OUT);
+
+                shareCellXAnimator.addUpdateListener(animation -> {
+                    float translationX = (float) animation.getAnimatedValue();
+                    selectedCell.setTranslationX(translationX);
+                });
+                shareCellXAnimator.start();
+
+                float startCellY = selectedCell.getTranslationY();
+                ValueAnimator shareCellYAnimator = ValueAnimator.ofFloat(0, 1);
+                shareCellYAnimator.setDuration(duration);
+                shareCellYAnimator.setInterpolator(CubicBezierInterpolator.EASE_IN);
+
+                shareCellYAnimator.addUpdateListener(animation -> {
+                    float value = (float) animation.getAnimatedValue();
+                    float endValue = undoView.getY() + undoView.getTranslationY() - dp(40);
+                    float translationY = startCellY + (endValue - startCellY) * value;
+                    selectedCell.setTranslationY(translationY);
+                    if (value >= 1) {
+                        contentView.removeView(selectedCell);
+                    }
+                });
+                shareCellYAnimator.start();
+
+                ValueAnimator scaleCellAnimator = ValueAnimator.ofFloat(1, 0.5f);
+                scaleCellAnimator.setDuration(duration);
+                scaleCellAnimator.setInterpolator(CubicBezierInterpolator.EASE_OUT_BACK);
+
+                scaleCellAnimator.addUpdateListener(animation -> {
+                    float scale = (float) animation.getAnimatedValue();
+                    selectedCell.setScaleY(scale);
+                    selectedCell.setScaleX(scale);
+
+                });
+                scaleCellAnimator.start();
+
+                contentView.addView(selectedCell, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT));
+            });
         }
 
         @Override

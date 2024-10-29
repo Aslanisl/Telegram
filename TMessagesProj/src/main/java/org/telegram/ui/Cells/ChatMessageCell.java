@@ -560,6 +560,10 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
         default void didPressSideButton(ChatMessageCell cell) {
         }
 
+        default boolean didLongPressSideButton(ChatMessageCell cell, float startSendButtonX, float endSendButtonX, float topSendButtonY, float bottomSendButtonY) {
+            return false;
+        }
+
         default void didPressOther(ChatMessageCell cell, float otherX, float otherY) {
         }
 
@@ -1374,15 +1378,16 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
 
     private int drawSideButton;
     private boolean sideButtonVisible;
-    private int drawSideButton2;
+    public boolean hideSideButton;
+    public int drawSideButton2;
     private boolean sideButtonPressed;
     private int pressedSideButton;
-    private Path sideButtonPath1, sideButtonPath2;
+    public Path sideButtonPath1, sideButtonPath2;
     private float[] sideButtonPathCorners1, sideButtonPathCorners2;
     private static final int SIDE_BUTTON_SPONSORED_CLOSE = 4;
-    private static final int SIDE_BUTTON_SPONSORED_MORE = 5;
-    private float sideStartX;
-    private float sideStartY;
+    public static final int SIDE_BUTTON_SPONSORED_MORE = 5;
+    public float sideStartX;
+    public float sideStartY;
 
     private StaticLayout nameLayout;
     private int nameLayoutWidth;
@@ -10057,8 +10062,6 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
         }
 
         linkPreviewPressed = false;
-        sideButtonPressed = false;
-        pressedSideButton = 0;
         imagePressed = false;
         timePressed = false;
         gamePreviewPressed = false;
@@ -10110,12 +10113,23 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                     }
                     handled = delegate.didLongPressChannelAvatar(this, currentChat, id, lastTouchX, lastTouchY);
                 }
+            } else if (sideButtonPressed) {
+                float startSendButtonX = sideStartX - dp(24);
+                float endSendButtonX = sideStartX + dp(40);
+                float topSendButtonY = sideStartY - dp(24);
+                float bottomSendButtonY = sideStartY + dp(38 + (drawSideButton == 3 && commentLayout != null ? 18 : 0) + (drawSideButton2 == SIDE_BUTTON_SPONSORED_MORE ? 38 : 0));
+
+                handled = delegate.didLongPressSideButton(this, sideStartX + getX(), sideStartX + dp(64) + getX(), sideStartY + getY(), bottomSendButtonY + getY());
             }
 
             if (!handled) {
                 delegate.didLongPress(this, lastTouchX, lastTouchY);
             }
         }
+
+        sideButtonPressed = false;
+        pressedSideButton = 0;
+
         return true;
     }
 
@@ -18309,6 +18323,9 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
     }
 
     private void drawSideButton(Canvas canvas) {
+        if (hideSideButton) {
+            return;
+        }
         if (drawSideButton != 0) {
             if (currentPosition != null && currentMessagesGroup != null && currentMessagesGroup.isDocuments && !currentPosition.last) {
                 return;

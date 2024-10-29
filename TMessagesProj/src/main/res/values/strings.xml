@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="AppName">Telegram</string>
-    <string name="AppNameBeta">Telegram Beta</string>
+    <string name="AppName">AsTelegram</string>
+    <string name="AppNameBeta">AsTelegram Beta</string>
     <string name="LanguageName">English</string>
     <string name="English">English</string>
     <string name="LanguageNameInEnglish">English</string>
@@ -3448,6 +3448,7 @@
     <string name="BotStatusCantRead">has no access to messages</string>
     <string name="BotInfoTitle">What can this bot do?</string>
     <string name="BotStart">START</string>
+    <string name="BotTapHint">Tap here to use this bot</string>
     <string name="BotUnblock">RESTART</string>
     <string name="BotRestart">Restart bot</string>
     <string name="BotAddToMenu">Add to Menu</string>
@@ -4087,6 +4088,8 @@
     <string name="VoipChannelLabelLive">LIVE</string>
     <string name="VoipChannelWatching">watching</string>
     <string name="VoipChannelScheduledVoiceChat">Scheduled Live Stream</string>
+    <string name="VoipChannelNotifyMeVoiceChat">Notify me</string>
+    <string name="VoipChannelNotifyMessageChat">You will be notified when the live stream starts.</string>
     <string name="VoipChannelOpenVoiceChat">Open live stream</string>
     <string name="VoipChannelJoinAnonymousAdmin">Sorry, you can\'t join live streams as an anonymous administrator.</string>
     <string name="VoipChannelTooMuch">Sorry, this live stream is full.</string>

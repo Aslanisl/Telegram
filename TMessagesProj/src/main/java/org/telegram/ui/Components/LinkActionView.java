@@ -74,6 +74,7 @@ public class LinkActionView extends LinearLayout {
     private boolean permanent;
     boolean loadingImporters;
     private QRCodeBottomSheet qrCodeBottomSheet;
+    private boolean isShowOptionOnlyQrCode;
     private boolean hideRevokeOption;
     private boolean canEdit = true;
     private final boolean isChannel;
@@ -96,8 +97,7 @@ public class LinkActionView extends LinearLayout {
         int containerPadding = 4;
         frameLayout.addView(linkView);
         optionsView = new ImageView(context);
-        optionsView.setImageDrawable(ContextCompat.getDrawable(context, R.drawable.ic_ab_other));
-        optionsView.setContentDescription(LocaleController.getString(R.string.AccDescrMoreOptions));
+        updateOptionButton();
         optionsView.setScaleType(ImageView.ScaleType.CENTER);
         frameLayout.addView(optionsView, LayoutHelper.createFrame(40, 48, Gravity.RIGHT | Gravity.CENTER_VERTICAL));
         addView(frameLayout, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, containerPadding, 0, containerPadding, 0));
@@ -220,6 +220,10 @@ public class LinkActionView extends LinearLayout {
 
         optionsView.setOnClickListener(view -> {
             if (actionBarPopupWindow != null) {
+                return;
+            }
+            if (isShowOptionOnlyQrCode) {
+                showQrCode();
                 return;
             }
             ActionBarPopupWindow.ActionBarPopupWindowLayout layout = new ActionBarPopupWindow.ActionBarPopupWindowLayout(context);
@@ -352,6 +356,10 @@ public class LinkActionView extends LinearLayout {
         updateColors();
     }
 
+    private void initOptionView() {
+
+    }
+
     public void showBulletin(int resId, CharSequence str) {
         Bulletin b = BulletinFactory.of(fragment).createSimpleBulletin(resId, str);
         b.hideAfterBottomSheet = false;
@@ -452,11 +460,27 @@ public class LinkActionView extends LinearLayout {
         optionsView.setVisibility(b ? View.VISIBLE : View.GONE);
     }
 
+    private void updateOptionButton() {
+        boolean isShowOptionCanEdit = !this.permanent && canEdit;
+        boolean newIsShowOptionOnlyQrCode = !isShowOptionCanEdit && hideRevokeOption;
+        if (isShowOptionOnlyQrCode != newIsShowOptionOnlyQrCode) {
+            isShowOptionOnlyQrCode = newIsShowOptionOnlyQrCode;
+
+            if (isShowOptionOnlyQrCode) {
+                optionsView.setImageDrawable(ContextCompat.getDrawable(optionsView.getContext(), R.drawable.msg_qrcode));
+                optionsView.setContentDescription(LocaleController.getString(R.string.GetQRCode));
+            } else {
+                optionsView.setImageDrawable(ContextCompat.getDrawable(optionsView.getContext(), R.drawable.ic_ab_other));
+                optionsView.setContentDescription(LocaleController.getString(R.string.AccDescrMoreOptions));
+            }
+        }
+    }
+
     public void hideRevokeOption(boolean b) {
         if (hideRevokeOption != b) {
             hideRevokeOption = b;
             optionsView.setVisibility(View.VISIBLE);
-            optionsView.setImageDrawable(ContextCompat.getDrawable(optionsView.getContext(), R.drawable.ic_ab_other));
+            updateOptionButton();
         }
     }
 
@@ -616,5 +640,6 @@ public class LinkActionView extends LinearLayout {
 
     public void setCanEdit(boolean canEdit) {
         this.canEdit = canEdit;
+        updateOptionButton();
     }
 }

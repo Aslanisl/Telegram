@@ -126,6 +126,7 @@ import androidx.collection.LongSparseArray;
 import androidx.core.content.ContextCompat;
 import androidx.core.content.FileProvider;
 import androidx.core.graphics.ColorUtils;
+import androidx.core.graphics.drawable.DrawableCompat;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.core.widget.NestedScrollView;
@@ -133,6 +134,7 @@ import androidx.dynamicanimation.animation.DynamicAnimation;
 import androidx.dynamicanimation.animation.FloatValueHolder;
 import androidx.dynamicanimation.animation.SpringAnimation;
 import androidx.dynamicanimation.animation.SpringForce;
+import androidx.mediarouter.app.MediaRouteButton;
 import androidx.recyclerview.widget.DefaultItemAnimator;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.LinearSmoothScrollerEnd;
@@ -142,6 +144,7 @@ import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.ExoPlayer;
 import com.google.android.exoplayer2.analytics.AnalyticsListener;
 import com.google.android.exoplayer2.ui.AspectRatioFrameLayout;
+import com.google.android.gms.cast.framework.CastButtonFactory;
 import com.google.android.gms.vision.Frame;
 import com.google.android.gms.vision.face.Face;
 import com.google.android.gms.vision.face.FaceDetector;
@@ -214,6 +217,7 @@ import org.telegram.ui.Components.BlurringShader;
 import org.telegram.ui.Components.Bulletin;
 import org.telegram.ui.Components.BulletinFactory;
 import org.telegram.ui.Components.CaptionPhotoViewer;
+import org.telegram.ui.Components.CastVideoPlayer;
 import org.telegram.ui.Components.ChatAttachAlert;
 import org.telegram.ui.Components.CheckBox;
 import org.telegram.ui.Components.ClippingImageView;
@@ -816,6 +820,8 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
     private ActionBarMenuItem editItem;
     private ActionBarMenuItem pipItem;
     private ActionBarMenuItem masksItem;
+    private ActionBarMenuItem chromeCast;
+    private MediaRouteButton mediaRouteButton;
     private LinearLayout itemsLayout;
     private ChooseQualityLayout.QualityIcon qualityIcon;
     private ChooseSpeedLayout chooseSpeedLayout;
@@ -1996,6 +2002,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
     private final static int gallery_menu_cancel_loading = 7;
     private final static int gallery_menu_share = 10;
     private final static int gallery_menu_openin = 11;
+    private final static int gallery_menu_chromecast = 12;
     private final static int gallery_menu_masks = 13;
     private final static int gallery_menu_savegif = 14;
     private final static int gallery_menu_masks2 = 15;
@@ -4923,7 +4930,9 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                     }
                     closePhoto(false, false);
                     currentMessageObject = null;
-                } else if (id == gallery_menu_send) {
+                } else if (id == gallery_menu_chromecast) {
+                    mediaRouteButton.performClick();
+                }else if (id == gallery_menu_send) {
                     if (currentMessageObject == null || !(parentActivity instanceof LaunchActivity)) {
                         return;
                     }
@@ -5482,6 +5491,28 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         editItem.setContentDescription(getString("AccDescrPhotoEditor", R.string.AccDescrPhotoEditor));
         sendItem = menu.addItem(gallery_menu_send, R.drawable.msg_header_share);
         sendItem.setContentDescription(getString("Forward", R.string.Forward));
+        chromeCast = menu.addItem(gallery_menu_chromecast, 0);
+        chromeCast.setContentDescription("Chromecast");
+
+        Paint paint = new Paint();
+        paint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.SRC_ATOP));
+
+        mediaRouteButton = new MediaRouteButton(parentActivity) {
+            @Override
+            public boolean onTouchEvent(MotionEvent event) {
+                return false;
+            }
+            @Override
+            protected void onDraw(@NonNull Canvas canvas) {
+                paint.setColor(resourcesProvider != null ? resourcesProvider.getColor(Theme.key_actionBarDefaultIcon) : Theme.getColor(Theme.key_actionBarDefaultIcon));
+                canvas.saveLayer(0, 0, getMeasuredWidth(), getMeasuredHeight(), null, Canvas.ALL_SAVE_FLAG);
+                super.onDraw(canvas);
+                canvas.drawRect(0, 0, getMeasuredWidth(), getMeasuredHeight(), paint);
+                canvas.restore();
+            }
+        };
+        chromeCast.addView(mediaRouteButton, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER | Gravity.START));
+        CastButtonFactory.setUpMediaRouteButton(parentActivity, mediaRouteButton);
 
         menuItem = menu.addItem(0, menuItemIcon = new OptionsSpeedIconDrawable());
         menuItem.setOnClickListener(v -> {
@@ -5571,6 +5602,46 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         speedGap = menuItem.addColoredGap();
         speedGap.setColor(0xff181818);
         menuItem.getPopupLayout().setFitItems(true);
+
+
+
+//        LinearLayout mediaRouteLayout = new LinearLayout(parentActivity);
+//        mediaRouteLayout.setOrientation(LinearLayout.HORIZONTAL);
+//        mediaRouteLayout.addView(mediaRouteButton);
+//        TextView mediaTextView = menuItem.addSubItem(123123, "Chromecast");
+//        ((ViewGroup) mediaTextView.getParent()).removeView(mediaTextView);
+//        mediaRouteLayout.addView(mediaTextView);
+//
+//        menuItem.addSubItem(mediaRouteLayout, LayoutHelper.MATCH_PARENT, AndroidUtilities.dp(48));
+
+//        if (CastVideoPlayer.getInstance().isCastAvailable()) {
+//            MediaRouteButton mediaRouteButton = new MediaRouteButton(parentActivity) {
+//                @Override
+//                public void setRemoteIndicatorDrawable(Drawable d) {
+//                    Drawable wrapDrawable = DrawableCompat.wrap(d);
+//                    DrawableCompat.setTint(wrapDrawable, 0xfffafafa);
+//                    super.setRemoteIndicatorDrawable(d);
+//                }
+//
+//                @Override
+//                protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+//                    setMeasuredDimension(dp(48), dp(48));
+//                }
+//            };
+//            CastButtonFactory.setUpMediaRouteButton(parentActivity, mediaRouteButton);
+//
+//            LinearLayout mediaRouteLayout = new LinearLayout(parentActivity);
+//            mediaRouteLayout.setOrientation(LinearLayout.HORIZONTAL);
+//            mediaRouteLayout.addView(mediaRouteButton);
+//            TextView mediaTextView = menuItem.addSubItem(123123, "Chromecast");
+//            ((ViewGroup) mediaTextView.getParent()).removeView(mediaTextView);
+//            mediaRouteLayout.addView(mediaTextView);
+//            mediaRouteLayout.setOnClickListener(v -> {
+//                mediaRouteButton.performClick();
+//            });
+//
+//            menuItem.addSubItem(mediaRouteLayout, LayoutHelper.MATCH_PARENT, AndroidUtilities.dp(48));
+//        }
 
         menuItem.addSubItem(gallery_menu_openin, R.drawable.msg_openin, getString(R.string.OpenInExternalApp)).setColors(0xfffafafa, 0xfffafafa);
         menuItem.setContentDescription(getString(R.string.AccDescrMoreOptions));

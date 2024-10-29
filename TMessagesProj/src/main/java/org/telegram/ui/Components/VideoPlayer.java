@@ -95,7 +95,6 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.List;
 
 @SuppressLint("NewApi")
@@ -274,6 +273,8 @@ public class VideoPlayer implements Player.Listener, VideoListener, AnalyticsLis
                 audioPlayer.setPlayWhenReady(autoplay);
             }
         }
+
+        CastVideoPlayer.getInstance().createPlayer();
     }
 
     public void preparePlayerLoop(Uri videoUri, String videoType, Uri audioUri, String audioType) {
@@ -290,6 +291,11 @@ public class VideoPlayer implements Player.Listener, VideoListener, AnalyticsLis
         audioPlayerReady = false;
         videoPlayerReady = false;
         ensurePlayerCreated();
+        setMediaSources();
+//        CastVideoPlayer.getInstance().setPlayerMedia(videoUri, videoType);
+    }
+
+    private void setMediaSources() {
         MediaSource mediaSource1 = null, mediaSource2 = null;
         for (int a = 0; a < 2; a++) {
             MediaSource mediaSource;
@@ -365,6 +371,8 @@ public class VideoPlayer implements Player.Listener, VideoListener, AnalyticsLis
         MediaSource mediaSource = mediaSourceFromUri(uri, type);
         player.setMediaSource(mediaSource, true);
         player.prepare();
+
+        CastVideoPlayer.getInstance().setPlayerMedia(uri, type);
     }
 
     public void preparePlayer(ArrayList<Quality> uris, Quality select) {
@@ -384,6 +392,12 @@ public class VideoPlayer implements Player.Listener, VideoListener, AnalyticsLis
 
         currentStreamIsHls = false;
         setSelectedQuality(true, select);
+
+        Quality quality = getHighestQuality(true);
+//            if (!quality.uris.isEmpty() && quality.uris.get(0).m3u8uri != null) {
+        if (quality != null && !quality.uris.isEmpty() && quality.uris.get(0).uri != null) {
+            CastVideoPlayer.getInstance().setPlayerMedia(quality.uris.get(0).uri, videoType);
+        }
     }
 
     public static Quality getSavedQuality(ArrayList<Quality> qualities, MessageObject messageObject) {
@@ -986,6 +1000,7 @@ public class VideoPlayer implements Player.Listener, VideoListener, AnalyticsLis
             audioPlayer.release();
             audioPlayer = null;
         }
+        CastVideoPlayer.getInstance().releasePlayer();
         if (shouldPauseOther) {
             NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.playerDidStartPlaying);
         }
@@ -1407,7 +1422,7 @@ public class VideoPlayer implements Player.Listener, VideoListener, AnalyticsLis
 
         @Override
         public void flush(int sampleRateHz, int channelCount, int encoding) {
-            
+
         }
 
 
