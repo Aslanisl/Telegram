@@ -6,7 +6,6 @@ import static org.telegram.messenger.AndroidUtilities.dpf2;
 import static org.telegram.messenger.AndroidUtilities.lerp;
 import static org.telegram.messenger.Utilities.clamp;
 
-import android.animation.ValueAnimator;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Matrix;
@@ -22,14 +21,10 @@ import android.graphics.Xfermode;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.SystemClock;
-import android.util.Log;
 import android.view.MotionEvent;
-import android.view.TextureView;
 import android.view.View;
 import android.view.ViewConfiguration;
-import android.widget.FrameLayout;
 
-import androidx.annotation.NonNull;
 import androidx.core.graphics.ColorUtils;
 
 import com.google.zxing.common.detector.MathUtils;
@@ -117,7 +112,7 @@ public class RecordControl extends View implements FlashViews.Invertable {
     private boolean dual;
     private final AnimatedFloat dualT = new AnimatedFloat(this, 0, 330, CubicBezierInterpolator.EASE_OUT_QUINT);
 
-    private static final long MAX_DURATION = 60 * 1000L;
+    private long maxDuration = 60 * 1000L;
     private long recordingStart;
     private long lastDuration;
 
@@ -180,16 +175,22 @@ public class RecordControl extends View implements FlashViews.Invertable {
         pauseDrawable = context.getResources().getDrawable(R.drawable.msg_round_pause_m).mutate();
         pauseDrawable.setColorFilter(new PorterDuffColorFilter(0xffffffff, PorterDuff.Mode.MULTIPLY));
 
-        updateGalleryImage();
+        updateGalleryImage(true);
     }
 
-    public void updateGalleryImage() {
+    public void setMaxDuration(long maxDuration) {
+        this.maxDuration = maxDuration;
+    }
+
+    public void updateGalleryImage(boolean loadStoryDrafts) {
         final String filter = "80_80";
-        ArrayList<StoryEntry> drafts = MessagesController.getInstance(galleryImage.getCurrentAccount()).getStoriesController().getDraftsController().drafts;
-        galleryImage.setOrientation(0, 0, true);
-        if (drafts != null && !drafts.isEmpty() && drafts.get(0).draftThumbFile != null) {
-            galleryImage.setImage(ImageLocation.getForPath(drafts.get(0).draftThumbFile.getAbsolutePath()), filter, null, null, noGalleryDrawable, 0, null, null, 0);
-            return;
+        if (loadStoryDrafts) {
+            ArrayList<StoryEntry> drafts = MessagesController.getInstance(galleryImage.getCurrentAccount()).getStoriesController().getDraftsController().drafts;
+            galleryImage.setOrientation(0, 0, true);
+            if (drafts != null && !drafts.isEmpty() && drafts.get(0).draftThumbFile != null) {
+                galleryImage.setImage(ImageLocation.getForPath(drafts.get(0).draftThumbFile.getAbsolutePath()), filter, null, null, noGalleryDrawable, 0, null, null, 0);
+                return;
+            }
         }
         MediaController.AlbumEntry albumEntry = MediaController.allMediaAlbumEntry;
         MediaController.PhotoEntry photoEntry = null;
@@ -434,30 +435,32 @@ public class RecordControl extends View implements FlashViews.Invertable {
 
         long duration = System.currentTimeMillis() - recordingStart;
         float recordEndT = recording ? 0 : 1f - recordingLongT;
-        float sweepAngle = duration / (float) MAX_DURATION * 360;
+        if (maxDuration > 0) {
+            float sweepAngle = duration / (float) maxDuration * 360;
 
-        float recordingLoading = this.recordingLoadingT.set(this.recordingLoading);
+            float recordingLoading = this.recordingLoadingT.set(this.recordingLoading);
 
-        outlineFilledPaint.setStrokeWidth(strokeWidth);
-        outlineFilledPaint.setAlpha((int) (0xFF * Math.max(.7f * recordingLoading, 1f - recordEndT)));
+            outlineFilledPaint.setStrokeWidth(strokeWidth);
+            outlineFilledPaint.setAlpha((int) (0xFF * Math.max(.7f * recordingLoading, 1f - recordEndT)));
 
-        if (recordingLoading <= 0) {
-            canvas.drawArc(AndroidUtilities.rectTmp, -90, sweepAngle, false, outlineFilledPaint);
-        } else {
-            final long now = SystemClock.elapsedRealtime();
-            CircularProgressDrawable.getSegments((now - recordingLoadingStart) % 5400, loadingSegments);
-            invalidate();
-            float fromAngle = loadingSegments[0], toAngle = loadingSegments[1];
+            if (recordingLoading <= 0) {
+                canvas.drawArc(AndroidUtilities.rectTmp, -90, sweepAngle, false, outlineFilledPaint);
+            } else {
+                final long now = SystemClock.elapsedRealtime();
+                CircularProgressDrawable.getSegments((now - recordingLoadingStart) % 5400, loadingSegments);
+                invalidate();
+                float fromAngle = loadingSegments[0], toAngle = loadingSegments[1];
 
-            float center = (fromAngle + toAngle) / 2f;
-            float amplitude = Math.abs(toAngle - fromAngle) / 2f;
+                float center = (fromAngle + toAngle) / 2f;
+                float amplitude = Math.abs(toAngle - fromAngle) / 2f;
 
-            if (this.recordingLoading) {
-                center = lerp(-90 + sweepAngle / 2f, center, recordingLoading);
-                amplitude = lerp(sweepAngle / 2f, amplitude, recordingLoading);
+                if (this.recordingLoading) {
+                    center = lerp(-90 + sweepAngle / 2f, center, recordingLoading);
+                    amplitude = lerp(sweepAngle / 2f, amplitude, recordingLoading);
+                }
+
+                canvas.drawArc(AndroidUtilities.rectTmp, center - amplitude, amplitude * 2, false, outlineFilledPaint);
             }
-
-            canvas.drawArc(AndroidUtilities.rectTmp, center - amplitude, amplitude * 2, false, outlineFilledPaint);
         }
 
         if (recording) {
@@ -466,7 +469,7 @@ public class RecordControl extends View implements FlashViews.Invertable {
             if (duration / 1000L != lastDuration / 1000L) {
                 delegate.onVideoDuration(duration / 1000L);
             }
-            if (duration >= MAX_DURATION) {
+            if (maxDuration > 0 && duration >= maxDuration) {
                 post(() -> {
                     recording = false;
                     longpressRecording = false;
@@ -802,6 +805,10 @@ public class RecordControl extends View implements FlashViews.Invertable {
         }
         flipButtonWasPressed = innerFlipButton;
         return r;
+    }
+
+    public boolean isRecording() {
+        return recording;
     }
 
     public void stopRecording() {

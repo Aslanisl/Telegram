@@ -29,8 +29,8 @@ import java.io.File;
 @SuppressLint("NewApi")
 public class PhotoAttachCameraCell extends FrameLayout {
 
-    private final Theme.ResourcesProvider resourcesProvider;
-    private ImageView imageView;
+    public final Theme.ResourcesProvider resourcesProvider;
+    public ImageView imageView;
     private ImageView backgroundView;
     private int itemSize;
 

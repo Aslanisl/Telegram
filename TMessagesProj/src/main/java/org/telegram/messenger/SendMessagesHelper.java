@@ -4253,6 +4253,8 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                 videoEditedInfo = newMsgObj.videoEditedInfo;
             } else if (videoEditedInfo != null && videoEditedInfo.notReadyYet) {
                 newMsgObj.videoEditedInfo.notReadyYet = videoEditedInfo.notReadyYet;
+            } else if (videoEditedInfo != null && videoEditedInfo.collageParts != null && !videoEditedInfo.collageParts.isEmpty()) {
+                newMsgObj.videoEditedInfo = videoEditedInfo;
             }
 
             if (groupId == 0) {
@@ -9224,6 +9226,10 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
             } catch (Exception e) {
                 FileLog.e(e);
             }
+        }
+        if (!infoObtained) {
+            attributeVideo.w = videoEditedInfo.resultWidth;
+            attributeVideo.h = videoEditedInfo.resultHeight;
         }
     }
 

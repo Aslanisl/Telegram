@@ -38,6 +38,7 @@ import org.telegram.messenger.MediaController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
+import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.messenger.VideoEncodingService;
 import org.telegram.tgnet.TLRPC;
@@ -266,7 +267,7 @@ public class DownloadButton extends ImageView {
         showToast(R.raw.error, LocaleController.getString("VideoConvertFail"));
     }
 
-    private static class BuildingVideo implements NotificationCenter.NotificationCenterDelegate {
+    public static class BuildingVideo implements NotificationCenter.NotificationCenterDelegate {
 
         final int currentAccount;
         final StoryEntry entry;

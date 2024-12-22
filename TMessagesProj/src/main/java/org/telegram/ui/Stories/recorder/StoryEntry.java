@@ -1115,7 +1115,10 @@ public class StoryEntry {
             info.backgroundPath = backgroundFile == null ? null : backgroundFile.getPath();
 
             long generalOffset = 0;
-            final int encoderBitrate = MediaController.extractRealEncoderBitrate(info.resultWidth, info.resultHeight, info.bitrate, true);
+            int encoderBitrate = MediaController.extractRealEncoderBitrate(info.resultWidth, info.resultHeight, info.bitrate, true);
+            if (encoderBitrate == 0) {
+                encoderBitrate = MediaController.extractRealEncoderBitrate(info.resultWidth, info.resultHeight, info.bitrate, false);
+            }
             if (isVideo && videoPath != null && !isCollage()) {
                 info.originalPath = videoPath;
                 info.isPhoto = false;
@@ -1199,6 +1202,9 @@ public class StoryEntry {
                 info.bitrate = -1;
                 info.framerate = 30;
                 info.estimatedSize = (long) (duration / 1000.0f * encoderBitrate / 8);
+                if (info.estimatedSize == 0) {
+                    info.estimatedSize = 1;
+                }
                 info.filterState = null;
             }
             info.account = currentAccount;

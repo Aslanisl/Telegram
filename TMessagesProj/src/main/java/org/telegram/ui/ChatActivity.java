@@ -726,7 +726,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
     private boolean scrollToTopOnResume;
     private boolean forceScrollToTop;
     private boolean scrollToTopUnReadOnResume;
-    private long dialog_id;
+    public long dialog_id;
     private Long dialog_id_Long;
     private int lastLoadIndex = 1;
     private SparseArray<MessageObject>[] selectedMessagesIds = new SparseArray[]{new SparseArray<>(), new SparseArray<>()};

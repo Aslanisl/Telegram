@@ -68,10 +68,12 @@ android {
             jniDebuggable true
             signingConfig signingConfigs.debug
             applicationIdSuffix ".beta"
-            minifyEnabled true
+            // TODO return to true
+            minifyEnabled false
             shrinkResources false
             multiDexEnabled true
-            proguardFiles getDefaultProguardFile('proguard-android.txt'), '../TMessagesProj/proguard-rules.pro', '../TMessagesProj/proguard-rules-beta.pro'
+            // TODO uncomment
+//            proguardFiles getDefaultProguardFile('proguard-android.txt'), '../TMessagesProj/proguard-rules.pro', '../TMessagesProj/proguard-rules-beta.pro'
             ndk.debugSymbolLevel = 'FULL'
         }
 

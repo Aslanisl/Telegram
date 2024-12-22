@@ -59,6 +59,7 @@ import android.widget.ImageView;
 import androidx.annotation.NonNull;
 import androidx.core.graphics.ColorUtils;
 
+
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.BuildVars;
@@ -505,7 +506,11 @@ public class CameraView extends FrameLayout implements TextureView.SurfaceTextur
         pixelW = getMeasuredWidth();
         pixelH = getMeasuredHeight();
         if (pixelDualW <= 0) {
-            pixelDualW = getMeasuredWidth();
+            if (isChangeAspectRationDual) {
+                pixelDualW = (float) (getMeasuredHeight() * 9 / 16);
+            } else {
+                pixelDualW = getMeasuredWidth();
+            }
             pixelDualH = getMeasuredHeight();
         }
     }
@@ -1157,6 +1162,7 @@ public class CameraView extends FrameLayout implements TextureView.SurfaceTextur
     private final int[][] cameraTexture = new int[2][1];
     private VideoRecorder videoEncoder;
 
+    public boolean isChangeAspectRationDual = false;
     private volatile float pixelW, pixelH;
     private volatile float pixelDualW, pixelDualH;
     private volatile float lastShapeTo;

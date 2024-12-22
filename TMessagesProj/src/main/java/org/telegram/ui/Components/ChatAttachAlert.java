@@ -78,6 +78,8 @@ import androidx.dynamicanimation.animation.SpringForce;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.google.android.exoplayer2.util.Log;
+
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.AnimationNotificationsLocker;
 import org.telegram.messenger.ChatObject;
@@ -610,7 +612,7 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
     public static class AttachAlertLayout extends FrameLayout {
 
         protected final Theme.ResourcesProvider resourcesProvider;
-        protected ChatAttachAlert parentAlert;
+        public ChatAttachAlert parentAlert;
 
         public AttachAlertLayout(ChatAttachAlert alert, Context context, Theme.ResourcesProvider resourcesProvider) {
             super(context);
@@ -909,7 +911,7 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
 
     private DecelerateInterpolator decelerateInterpolator = new DecelerateInterpolator();
 
-    protected ChatAttachViewDelegate delegate;
+    public ChatAttachViewDelegate delegate;
 
     public int[] scrollOffsetY = new int[2];
     private int previousScrollOffsetY;
@@ -3883,8 +3885,8 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
                 nextAttachLayout.setTranslationX(width);
                 if (currentAttachLayout instanceof ChatAttachAlertPhotoLayout) {
                     ChatAttachAlertPhotoLayout photoLayout = (ChatAttachAlertPhotoLayout) currentAttachLayout;
-                    if (photoLayout.cameraView != null) {
-                        photoLayout.cameraView.setVisibility(View.INVISIBLE);
+                    if (photoLayout.collageLayoutView != null) {
+                        photoLayout.collageLayoutView.setVisibility(View.INVISIBLE);
                         photoLayout.cameraIcon.setVisibility(View.INVISIBLE);
                         photoLayout.cameraCell.setVisibility(View.VISIBLE);
                     }
@@ -3893,8 +3895,8 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
                 currentAttachLayout.setTranslationX(-width);
                 if (nextAttachLayout == photoLayout) {
                     ChatAttachAlertPhotoLayout photoLayout = (ChatAttachAlertPhotoLayout) nextAttachLayout;
-                    if (photoLayout.cameraView != null) {
-                        photoLayout.cameraView.setVisibility(View.VISIBLE);
+                    if (photoLayout.collageLayoutView != null) {
+                        photoLayout.collageLayoutView.setVisibility(View.VISIBLE);
                         photoLayout.cameraIcon.setVisibility(View.VISIBLE);
                     }
                 }
